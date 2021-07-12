@@ -10,10 +10,12 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Bot extends TelegramLongPollingBot {
+    private final ArrayList<Message> messageArrayList = new ArrayList<>();
     public static void main(String[] args) {
         ApiContextInitializer.init();
         TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
@@ -28,12 +30,15 @@ public class Bot extends TelegramLongPollingBot {
     public void sendMsg(Message message, String text) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
-        sendMessage.setChatId(message.getChatId().toString());
-        sendMessage.setReplyToMessageId(message.getMessageId());
-        sendMessage.setText(text);
 
+        sendMessage.setChatId(message.getChatId().toString());
+
+        sendMessage.setReplyToMessageId(message.getMessageId());
+
+        sendMessage.setText(text);
         try {
-            setButton(sendMessage);
+
+            setButtons(sendMessage);
             sendMessage(sendMessage);
 
         } catch (TelegramApiException e) {
@@ -42,28 +47,47 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     public void onUpdateReceived(Update update) {
+        WeatherModel weatherModel = new WeatherModel();
         Message message = update.getMessage();
-        boolean weatherBool = false;
+        messageArrayList.add(message);
+        if(messageArrayList.size() == 1) {
+            if ("/help".equals(messageArrayList.get(0).getText())) {
+                sendMsg(messageArrayList.get(0), "1");
+                messageArrayList.removeAll(messageArrayList);
+            }
+        }
 
-        if(message != null && message.hasText()) {
-            switch (message.getText()) {
-                case "/fun" : sendMsg(message, "Стадии развития программиста: \n" +
-                        "— Ваш код говно. \n" +
-                        "— Мой код говно. \n" +
-                        "— Любой код говно. \n" +
-                        "— Жизнь говно. \n" +
-                        "— Выступаешь на конференции с темой «Как структурировать говно так, чтобы оно не растекалось».");
-                break;
-                case "/weather" : sendMsg(message, "В каком городе вы хотите узнать погоду?");
-                break;
-                case "/translator" : sendMsg(message, "Выберите язык для перевода");
-                break;
-                default:
+
+        if (messageArrayList.get(0).getText().equals("/translate") && messageArrayList.size() == 1) {
+            sendMsg(messageArrayList.get(0), "Введите язык для перевода.");
+        }
+        if(messageArrayList.size() == 2 && messageArrayList.get(0).getText().equals("/translate")) {
+            try {
+                sendMsg(messageArrayList.get(1), Weather.getWeather(messageArrayList.get(1).getText(), weatherModel));
+            } catch (IOException e) {
+                sendMsg(messageArrayList.get(1), "Город не найден");
+            }
+            finally {
+                messageArrayList.removeAll(messageArrayList);
+            }
+        }
+
+        if (messageArrayList.get(0).getText().equals("/weather") && messageArrayList.size() == 1) {
+            sendMsg(messageArrayList.get(0), "Выберите город");
+        }
+        if(messageArrayList.size() == 2 && messageArrayList.get(0).getText().equals("/weather")) {
+            try {
+                sendMsg(messageArrayList.get(1), Weather.getWeather(messageArrayList.get(1).getText(), weatherModel));
+            } catch (IOException e) {
+                sendMsg(messageArrayList.get(1), "Город не найден");
+            }
+            finally {
+                messageArrayList.removeAll(messageArrayList);
             }
         }
     }
 
-    public void setButton(SendMessage sendMessage) {
+    public void setButtons(SendMessage sendMessage) {
         ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
         replyKeyboardMarkup.setSelective(true);
@@ -72,9 +96,10 @@ public class Bot extends TelegramLongPollingBot {
 
         List<KeyboardRow> keyboardRowList = new ArrayList<>();
         KeyboardRow keyboardFirstRow = new KeyboardRow();
+
+        keyboardFirstRow.add(new KeyboardButton("/help"));
         keyboardFirstRow.add(new KeyboardButton("/weather"));
-        keyboardFirstRow.add(new KeyboardButton("/translator"));
-        keyboardFirstRow.add(new KeyboardButton("/fun"));
+        keyboardFirstRow.add(new KeyboardButton("/translate"));
 
         keyboardRowList.add(keyboardFirstRow);
         replyKeyboardMarkup.setKeyboard(keyboardRowList);
