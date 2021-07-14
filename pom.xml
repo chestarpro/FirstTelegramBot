@@ -36,5 +36,11 @@
             <artifactId>google-http-client-gson</artifactId>
             <version>LATEST</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.ibm.watson</groupId>
+            <artifactId>ibm-watson</artifactId>
+            <version>9.2.0</version>
+        </dependency>
     </dependencies>
 </project>

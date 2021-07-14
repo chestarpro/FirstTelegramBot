@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Bot extends TelegramLongPollingBot {
-    private final ArrayList<Message> messageArrayList = new ArrayList<>();
+
     public static void main(String[] args) {
         ApiContextInitializer.init();
         TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
@@ -30,17 +30,12 @@ public class Bot extends TelegramLongPollingBot {
     public void sendMsg(Message message, String text) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
-
         sendMessage.setChatId(message.getChatId().toString());
-
         sendMessage.setReplyToMessageId(message.getMessageId());
-
         sendMessage.setText(text);
         try {
-
             setButtons(sendMessage);
             sendMessage(sendMessage);
-
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
@@ -49,40 +44,17 @@ public class Bot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         WeatherModel weatherModel = new WeatherModel();
         Message message = update.getMessage();
-        messageArrayList.add(message);
-        if(messageArrayList.size() == 1) {
-            if ("/help".equals(messageArrayList.get(0).getText())) {
-                sendMsg(messageArrayList.get(0), "1");
-                messageArrayList.removeAll(messageArrayList);
-            }
-        }
 
-
-        if (messageArrayList.get(0).getText().equals("/translate") && messageArrayList.size() == 1) {
-            sendMsg(messageArrayList.get(0), "Введите язык для перевода.");
-        }
-        if(messageArrayList.size() == 2 && messageArrayList.get(0).getText().equals("/translate")) {
-            try {
-                sendMsg(messageArrayList.get(1), Weather.getWeather(messageArrayList.get(1).getText(), weatherModel));
-            } catch (IOException e) {
-                sendMsg(messageArrayList.get(1), "Город не найден");
+        if (message != null && message.hasText()) {
+            if (message.getText().substring(0, 7).equals("weather")) {  // --> weather/bishkek
+                try {
+                    sendMsg(message, Weather.getWeather(message.getText().substring(8), weatherModel)); // --> bishkek
+                } catch (IOException e) {
+                    sendMsg(message, "Город не найден!");
+                }
             }
-            finally {
-                messageArrayList.removeAll(messageArrayList);
-            }
-        }
-
-        if (messageArrayList.get(0).getText().equals("/weather") && messageArrayList.size() == 1) {
-            sendMsg(messageArrayList.get(0), "Выберите город");
-        }
-        if(messageArrayList.size() == 2 && messageArrayList.get(0).getText().equals("/weather")) {
-            try {
-                sendMsg(messageArrayList.get(1), Weather.getWeather(messageArrayList.get(1).getText(), weatherModel));
-            } catch (IOException e) {
-                sendMsg(messageArrayList.get(1), "Город не найден");
-            }
-            finally {
-                messageArrayList.removeAll(messageArrayList);
+            if (message.getText().substring(0, 9).equals("translate")) { // --> translate/en-ru/text
+                sendMsg(message, TranslatorIBM.getTranslate(message.getText().substring(16), message.getText().substring(10, 15))); // en-ru/text
             }
         }
     }
@@ -98,8 +70,7 @@ public class Bot extends TelegramLongPollingBot {
         KeyboardRow keyboardFirstRow = new KeyboardRow();
 
         keyboardFirstRow.add(new KeyboardButton("/help"));
-        keyboardFirstRow.add(new KeyboardButton("/weather"));
-        keyboardFirstRow.add(new KeyboardButton("/translate"));
+        keyboardFirstRow.add(new KeyboardButton("/fun"));
 
         keyboardRowList.add(keyboardFirstRow);
         replyKeyboardMarkup.setKeyboard(keyboardRowList);

@@ -7,9 +7,11 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="TelegramBotApi" />
+        <module name="Bot" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="Bot" target="1.7" />
       <module name="TelegramBotApi" target="1.7" />
     </bytecodeTargetLevel>
   </component>
