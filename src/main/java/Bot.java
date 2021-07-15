@@ -1,3 +1,5 @@
+import com.ibm.cloud.sdk.core.service.exception.BadRequestException;
+import com.ibm.cloud.sdk.core.service.exception.NotFoundException;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.TelegramBotsApi;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
@@ -13,6 +15,7 @@ import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class Bot extends TelegramLongPollingBot {
 
@@ -46,15 +49,25 @@ public class Bot extends TelegramLongPollingBot {
         Message message = update.getMessage();
 
         if (message != null && message.hasText()) {
-            if (message.getText().substring(0, 7).equals("weather")) {  // --> weather/bishkek
+            if(message.getText().equals("help")) {
+                sendMsg(message, "");
+            }
+            if (message.getText().substring(0, 1).toLowerCase(Locale.ROOT).equals("w")) {  // --> weather/bishkek
                 try {
-                    sendMsg(message, Weather.getWeather(message.getText().substring(8), weatherModel)); // --> bishkek
+                    sendMsg(message, Weather.getWeather(message.getText().substring(2), weatherModel)); // --> bishkek
                 } catch (IOException e) {
                     sendMsg(message, "Город не найден!");
                 }
             }
-            if (message.getText().substring(0, 9).equals("translate")) { // --> translate/en-ru/text
-                sendMsg(message, TranslatorIBM.getTranslate(message.getText().substring(16), message.getText().substring(10, 15))); // en-ru/text
+            if (message.getText().substring(0, 1).toLowerCase(Locale.ROOT).equals("t")) { // --> translate/en-ru/text
+                try {
+                    sendMsg(message, TranslatorIBM.getTranslate(message.getText().substring(8), message.getText().substring(2, 7))); // en-ru/text
+                }
+                catch (BadRequestException e) {
+                    sendMsg(message, "Поле пустое!");
+                } catch (NotFoundException e) {
+                    sendMsg(message, "Язык не найден!");
+                }
             }
         }
     }
@@ -69,8 +82,8 @@ public class Bot extends TelegramLongPollingBot {
         List<KeyboardRow> keyboardRowList = new ArrayList<>();
         KeyboardRow keyboardFirstRow = new KeyboardRow();
 
-        keyboardFirstRow.add(new KeyboardButton("/help"));
-        keyboardFirstRow.add(new KeyboardButton("/fun"));
+        keyboardFirstRow.add(new KeyboardButton("help"));
+        keyboardFirstRow.add(new KeyboardButton("fun"));
 
         keyboardRowList.add(keyboardFirstRow);
         replyKeyboardMarkup.setKeyboard(keyboardRowList);
